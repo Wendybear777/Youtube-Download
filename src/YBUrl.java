@@ -2,6 +2,15 @@ public class YBUrl {
 	private String title;
 	private String DUrl;
 	private String source;
+	private String fileType;
+
+	public void setFileType(String fileType) {
+		this.fileType = fileType;
+	}
+
+	public String getFileType() {
+		return fileType;
+	}
 
 	public String getSource() {
 		return source;

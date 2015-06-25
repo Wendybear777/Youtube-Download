@@ -1,85 +1,47 @@
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import org.openqa.selenium.WebElement;
-import org.openqa.selenium.phantomjs.PhantomJSDriver;
+import java.net.*;
+import java.net.Proxy.Type;
+import java.io.*;
 
 public class Downloader {
 
-	private List<String> sourceList;
-
 	public Downloader() {
-		sourceList = new ArrayList<String>();
+
 	}
 
-	public void addTask(String source) {
-		sourceList.add(source);
-	}
-
-	public void startDownload() {
-		System.out.print("Becoming....");
-		for (int i = 0; i < sourceList.size(); i++) {
-			TaskThread taskThread = new TaskThread(sourceList.get(i));
-			taskThread.start();
-		}
-	}
-
-	class TaskThread extends Thread {
-		String url;
-
-		public TaskThread(String yb) {
-			// TODO Auto-generated constructor stub
-			url = yb;
-		}
-
-		@Override
-		public void run() {
-			Download(url);
-		}
-	}
-
-	public YBUrl getYTBAddress(String utbUrl) {
-		PhantomJSDriver phantom = new PhantomJSDriver();
+	public void Download(String url, String filename) {
 		try {
-			String url = "http://www.clipconverter.cc";
-			phantom.get(url);
-			phantom.findElementById("mediaurl").sendKeys(
-					new String[] { utbUrl });
-			phantom.findElementById("submiturl").click();
-			YBUrl ybUrl = new YBUrl();
-			boolean isOK = false;
-			while (!isOK) {
-				try {
-					WebElement el = phantom.findElementById("0");
-					ybUrl.setDUrl(el.getAttribute("value"));
-					WebElement el1 = phantom.findElementById("filename");
-					WebElement el2 = phantom.findElementById("filetype");
-					ybUrl.setTitle(el1.getAttribute("value") + "."
-							+ el2.getAttribute("value"));
-					return ybUrl;
-				} catch (Exception e) {
-					isOK = false;
-				}
-			}
+			saveUrl(filename, url);
 		} catch (Exception e) {
-			phantom.close();
+			e.printStackTrace();
 		}
-		return null;
 	}
 
-	public void Download(String url) {
-		YBUrl yb = getYTBAddress(url);
-		if (yb != null) {
-			System.out.println(yb);
-			try {
-				String command = "wget \"" + yb.getDUrl() + "\" -O "
-						+ yb.getTitle();
-				Process p = Runtime.getRuntime().exec(command);
-			} catch (IOException e) {
-				System.out.println("Error URL:" + e.getMessage());
+	private void saveUrl(String filename, String urlString)
+			throws MalformedURLException, IOException {
+		BufferedInputStream in = null;
+		FileOutputStream fout = null;
+		URL url = new URL(urlString);
+		try {
+			System.setProperty("java.net.useSystemProxies", "true");
+			SocketAddress sa = new InetSocketAddress("127.0.0.1", 7070);
+			Proxy proxy = new Proxy(Type.SOCKS, sa);
+			URLConnection connection = url.openConnection(proxy);
+			in = new BufferedInputStream(connection.getInputStream());
+			fout = new FileOutputStream(filename);
+			int size = in.available() / (1024 * 1024);
+			System.out.println(filename + "-----size:" + size);
+			final byte data[] = new byte[1024];
+			int count;
+			while ((count = in.read(data, 0, 1024)) != -1) {
+				fout.write(data, 0, count);
 			}
-		} else {
-			System.out.println("Error URL:" + url);
+		} finally {
+			if (in != null) {
+				in.close();
+			}
+			if (fout != null) {
+				fout.close();
+			}
 		}
 	}
 }
